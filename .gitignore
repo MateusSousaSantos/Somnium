@@ -60,7 +60,7 @@ sysinfo.txt
 *.apk
 *.aab
 *.unitypackage
-*.app
+*.apgit remote remove originp
 
 # Crashlytics generated file
 crashlytics-build.properties
