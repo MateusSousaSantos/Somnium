@@ -7,10 +7,16 @@ public class IdleState : PlayerState
 {
 
     private Vector2 moveInput;
-
+    private Animator animator;
     public override void EnterState(PlayerStateController playerMovmentController)
     {
         base.EnterState(playerMovmentController);
+        animator = playerMovmentController.GetComponent<Animator>();
+
+        if (animator != null)
+        {
+            animator.SetTrigger("idle"); // Set animation parameter
+        }
     }
 
     public override void ExitState()
@@ -20,13 +26,19 @@ public class IdleState : PlayerState
     public override void UpdateState()
     {
         if (moveInput != Vector2.zero)
-        {
-            if (Input.GetKey(KeyCode.LeftShift))
+        {   
+            if(Input.GetKey(KeyCode.LeftShift))
             {
                 playerMovmentController.transitionToState(playerMovmentController.crouchState);
             }
-            playerMovmentController.transitionToState(playerMovmentController.walkingState);
-
+            else
+            {
+                playerMovmentController.transitionToState(playerMovmentController.walkingState);
+            }
+        }
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            playerMovmentController.transitionToState(playerMovmentController.crouchState);
         }
 
     }

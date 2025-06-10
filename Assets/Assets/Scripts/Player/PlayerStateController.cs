@@ -11,6 +11,7 @@ public class PlayerStateController : MonoBehaviour
     public WalkingState walkingState;
     public CrouchState crouchState;
     public DeadState deadState;
+    private SpriteRenderer spriteRenderer;
 
 
     private float detectionRange = 2F;
@@ -23,6 +24,7 @@ public class PlayerStateController : MonoBehaviour
         crouchState = GetComponent<CrouchState>();
         deadState = GetComponent<DeadState>();
         playerStats = GetComponent<PlayerStats>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     void Start()
@@ -34,11 +36,15 @@ public class PlayerStateController : MonoBehaviour
     void Update()
     {
         currentState.UpdateState();
+
+        UpdateFacingDirection();
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             checkForInteractable();
         }
-        
+
+
     }
     private void OnDrawGizmos()
     {
@@ -69,7 +75,7 @@ public class PlayerStateController : MonoBehaviour
         var closestDistance = Vector2.Distance(transform.position, closestInteractable.position);
         foreach (var hitCollider in hitColliders)
         {
-            var distance = Vector2.Distance(transform.position, hitCollider.transform.position);   
+            var distance = Vector2.Distance(transform.position, hitCollider.transform.position);
             if (distance < closestDistance)
             {
                 closestInteractable = hitCollider.transform;
@@ -79,6 +85,22 @@ public class PlayerStateController : MonoBehaviour
         if (closestInteractable != null)
         {
             closestInteractable.GetComponent<Interactable>().Interact();
+        }
+    }
+
+    private void UpdateFacingDirection()
+    {
+        // Get the mouse position in world space
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // Compare the mouse position with the player's position
+        if ( mousePosition.x > transform.position.x)
+        {
+            spriteRenderer.flipX = true; // Facing right
+        }
+        else if (mousePosition.x < transform.position.x)
+        {
+            spriteRenderer.flipX = false; // Facing left
         }
     }
 }
@@ -96,4 +118,6 @@ public abstract class PlayerState : MonoBehaviour
     public abstract void ExitState();
     public abstract void UpdateState();
 
+
 }
+

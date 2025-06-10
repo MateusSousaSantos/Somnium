@@ -9,6 +9,7 @@ public class CrouchState : PlayerState
     private Vector2 moveInput;
     new Rigidbody2D rigidbody;
     private float speed = 2.5F;
+    private Animator animator;
     #endregion
 
     public override void EnterState(PlayerStateController playerMovmentController)
@@ -16,6 +17,12 @@ public class CrouchState : PlayerState
 
         base.EnterState(playerMovmentController);
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
+        animator = playerMovmentController.GetComponent<Animator>();
+        rigidbody.velocity = 0 * moveInput; // Reset velocity to zero when entering crouch state
+        if (animator != null)
+        {
+            animator.SetTrigger("crouch"); // Set animation parameter
+        }
     }
 
     public override void ExitState()
@@ -26,6 +33,17 @@ public class CrouchState : PlayerState
     public override void UpdateState()
     {
         rigidbody.velocity = moveInput * speed;
+        if (moveInput != Vector2.zero)
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                animator.SetTrigger("crouchMoving");
+            }
+            else
+            {
+                playerMovmentController.transitionToState(playerMovmentController.walkingState);
+            }
+        }
         if (moveInput == Vector2.zero && Input.anyKey == false)
         {
             playerMovmentController.transitionToState(playerMovmentController.idleState);

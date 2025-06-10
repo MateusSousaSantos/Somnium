@@ -10,6 +10,8 @@ public class WalkingState : PlayerState
     new Rigidbody2D rigidbody;
     private Coroutine createObjectCoroutine;
     public GameObject objectToCreate;
+
+    private Animator animator; 
     private float speed = 5;
     #endregion
 
@@ -19,6 +21,12 @@ public class WalkingState : PlayerState
         base.EnterState(playerMovmentController);
 
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
+        animator = playerMovmentController.GetComponent<Animator>();
+
+        if (animator != null)
+        {
+            animator.SetTrigger("walk"); 
+        }
 
         createObjectCoroutine = playerMovmentController.StartCoroutine(CreateObjectAtIntervals());
 
