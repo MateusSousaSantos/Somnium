@@ -1,5 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
+using System.Xml.Schema;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class RevolverScript : MonoBehaviour
@@ -16,11 +17,13 @@ public class RevolverScript : MonoBehaviour
     [SerializeField] private bool canShoot = true;
     private GameObject lanter; // Add this line
 
+    private DynamicCircleCursor dynamicCircleCursor;
 
 
     private void Start()
     {
         //retirar codigo abaixo, quando inventario estiver feito
+        dynamicCircleCursor = FindObjectOfType<DynamicCircleCursor>();
         currentAmmo = maxAmmo;
         barrel = transform.Find("Barrel");
         canShoot = true;
@@ -45,6 +48,20 @@ public class RevolverScript : MonoBehaviour
             }
         }
 
+        // Change game speed with keys
+        if (Input.GetKeyDown(KeyCode.Alpha1)) // Set normal speed
+        {
+            Time.timeScale = 1f;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2)) // Slow down the game
+        {
+            Time.timeScale = 0.5f;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3)) // Speed up the game
+        {
+            Time.timeScale = 2f;
+        }
+
     }
 
     private void RevolverShoot()
@@ -54,9 +71,13 @@ public class RevolverScript : MonoBehaviour
         {
             if (currentAmmo > 0)
             {
+                float x = dynamicCircleCursor.targetRadius;
+                float randomOffset = UnityEngine.Random.Range(-10 , 10);
+                randomOffset *= (x - 0.2f) * 2;
 
+                Quaternion rotation = barrel.rotation * Quaternion.Euler(barrel.rotation.x, barrel.rotation.y, barrel.rotation.z + randomOffset);
                 animator.SetTrigger("Shoot");
-                Instantiate(bullet, barrel.position, transform.rotation);
+                Instantiate(bullet, barrel.position, rotation);
                 StartCoroutine(Cooldown(fireRate));
                 currentAmmo--;
             }

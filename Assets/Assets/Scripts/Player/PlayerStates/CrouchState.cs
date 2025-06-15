@@ -8,13 +8,16 @@ public class CrouchState : PlayerState
     #region variables
     private Vector2 moveInput;
     new Rigidbody2D rigidbody;
-    private float speed = 2.5F;
     private Animator animator;
+
+    private PlayerStats playerStats;
     #endregion
 
     public override void EnterState(PlayerStateController playerMovmentController)
     {
-
+        playerStats = playerMovmentController.GetComponent<PlayerStats>();
+        playerStats.speed = 2; // Set speed to a lower value when crouching
+        playerStats.concentration -= 25f; // Decrease concentration when crouching
         base.EnterState(playerMovmentController);
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
         animator = playerMovmentController.GetComponent<Animator>();
@@ -27,12 +30,14 @@ public class CrouchState : PlayerState
 
     public override void ExitState()
     {
-
+        playerStats.concentration += 25f; // Reset concentration when exiting crouch state
     }
 
     public override void UpdateState()
     {
-        rigidbody.velocity = moveInput * speed;
+
+
+        rigidbody.velocity = moveInput * playerStats.speed; 
         if (moveInput != Vector2.zero)
         {
             if (Input.GetKey(KeyCode.LeftShift))

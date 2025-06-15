@@ -12,14 +12,16 @@ public class WalkingState : PlayerState
     public GameObject objectToCreate;
 
     private Animator animator; 
-    private float speed = 5;
+    private PlayerStats playerStats;
     #endregion
 
     public override void EnterState(PlayerStateController playerMovmentController)
     {
 
         base.EnterState(playerMovmentController);
-
+        playerStats = playerMovmentController.GetComponent<PlayerStats>();
+        playerStats.speed = 5; 
+        playerStats.concentration -= 50f; 
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
         animator = playerMovmentController.GetComponent<Animator>();
 
@@ -38,6 +40,7 @@ public class WalkingState : PlayerState
         {
             playerMovmentController.StopCoroutine(createObjectCoroutine);
         }
+        playerStats.concentration += 50f; // Reset concentration when exiting walking state
     }
 
     public override void UpdateState()
@@ -50,7 +53,7 @@ public class WalkingState : PlayerState
         {
             playerMovmentController.transitionToState(playerMovmentController.crouchState);
         }
-        rigidbody.velocity = moveInput * speed;
+        rigidbody.velocity = moveInput * playerStats.speed;
 
 
     }

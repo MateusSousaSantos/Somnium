@@ -9,6 +9,9 @@ public class PlayerStats : MonoBehaviour
     public int currentHealth = 100;
     public int maxHealth = 100;
 
+    public int speed = 5; 
+    public float concentration = 100f; // Concentration level of the player
+
     void Awake()
     {
         playerStateController = GetComponent<PlayerStateController>();

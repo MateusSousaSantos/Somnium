@@ -8,15 +8,20 @@ public class IdleState : PlayerState
 
     private Vector2 moveInput;
     private Animator animator;
+    
+    private PlayerStats playerStats;
     public override void EnterState(PlayerStateController playerMovmentController)
     {
         base.EnterState(playerMovmentController);
         animator = playerMovmentController.GetComponent<Animator>();
-
+        playerStats = playerMovmentController.GetComponent<PlayerStats>();
+        playerStats.speed = 0; // Set speed to zero when idle
         if (animator != null)
         {
             animator.SetTrigger("idle"); // Set animation parameter
         }
+
+
     }
 
     public override void ExitState()
