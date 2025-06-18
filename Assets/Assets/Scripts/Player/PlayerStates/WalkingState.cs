@@ -8,8 +8,8 @@ public class WalkingState : PlayerState
     #region variables
     private Vector2 moveInput;
     new Rigidbody2D rigidbody;
-    private Coroutine createObjectCoroutine;
-    public GameObject objectToCreate;
+    private Coroutine stepsCoroutine;
+    public GameObject step;
 
     private Animator animator; 
     private PlayerStats playerStats;
@@ -30,15 +30,15 @@ public class WalkingState : PlayerState
             animator.SetTrigger("walk"); 
         }
 
-        createObjectCoroutine = playerMovmentController.StartCoroutine(CreateObjectAtIntervals());
+        stepsCoroutine = playerMovmentController.StartCoroutine(CreateStepAtIntervals());
 
     }
 
     public override void ExitState()
     {
-        if (createObjectCoroutine != null)
+        if (stepsCoroutine != null)
         {
-            playerMovmentController.StopCoroutine(createObjectCoroutine);
+            playerMovmentController.StopCoroutine(stepsCoroutine);
         }
         playerStats.concentration += 50f; // Reset concentration when exiting walking state
     }
@@ -63,7 +63,7 @@ public class WalkingState : PlayerState
         moveInput = inputValue.Get<Vector2>();
     }
 
-    private IEnumerator CreateObjectAtIntervals()
+    private IEnumerator CreateStepAtIntervals()
     {
         while (true)
         {
@@ -74,7 +74,7 @@ public class WalkingState : PlayerState
 
     private void CreateTemporaryObject()
     {
-        GameObject newObject = Instantiate(objectToCreate, playerMovmentController.transform.position, Quaternion.identity);
+        GameObject newObject = Instantiate(step, playerMovmentController.transform.position, Quaternion.identity);
         Destroy(newObject, 2f);
     }
 }

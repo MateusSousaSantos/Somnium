@@ -10,14 +10,40 @@ public class DynamicCircleCursor : MonoBehaviour
     [SerializeField]
     private PlayerStats playerStats;
 
+    public GameObject player; // Reference to the player GameObject
+
     public float radius = 5f; // Radius of the circle
     public int segments = 50; // Number of segments for the circle
 
     public float thickness = 0.2f; // Thickness of the circle line
     private LineRenderer line;
 
+    private void Start()
+    {
+        cursorHotspot = new Vector2(circleTexture.width / 2, circleTexture.height / 2);
+        Cursor.SetCursor(circleTexture, cursorHotspot, CursorMode.Auto);
+        player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            playerStats = player.GetComponent<PlayerStats>();
+            if (playerStats == null)
+            {
+                Debug.LogError("PlayerStats component not found on the Player GameObject.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Player GameObject not found in the scene.");
+        }
+    }
+    
     private void Awake()
     {
+        playerStats = GameObject.FindWithTag("Player").GetComponent<PlayerStats>();
+        if (playerStats == null)
+        {
+            Debug.LogError("PlayerStats component not found on the Player GameObject.");
+        }
         if (circleTexture == null)
         {
             Debug.LogError("Circle texture is not assigned in the inspector.");
@@ -48,11 +74,6 @@ public class DynamicCircleCursor : MonoBehaviour
         line.endWidth = thickness;   // Adjust this value for the desired thickness
     }
 
-    void Start()
-    {
-        cursorHotspot = new Vector2(circleTexture.width / 2, circleTexture.height / 2);
-        Cursor.SetCursor(circleTexture, cursorHotspot, CursorMode.Auto);
-    }
     [SerializeField]
     public float targetRadius; // The target radius value
     private float smoothingSpeed = 5f; // Speed of smoothing

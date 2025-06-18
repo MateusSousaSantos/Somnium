@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 7280561008838475153}
   - component: {fileID: 6432649771247693141}
-  - component: {fileID: 822886035577705076}
+  - component: {fileID: 23935410467174466}
   m_Layer: 0
   m_Name: stepSound
-  m_TagString: Untagged
+  m_TagString: Sound
   m_Icon: {fileID: -5442936267250999957, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -45,9 +45,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b312bc5c01fab147a08bdc95acb8b83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  soundradius: 0
-  stepSoundRadius: 5
---- !u!58 &822886035577705076
+  soundHeight: 0
+  sound: {fileID: 0}
+  soundPosition: {x: 0, y: 0}
+--- !u!58 &23935410467174466
 CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -59,10 +60,10 @@ CircleCollider2D:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 127
   m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2
@@ -79,6 +80,6 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.08858967, y: 0}
+  m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 5
+  m_Radius: 0.5

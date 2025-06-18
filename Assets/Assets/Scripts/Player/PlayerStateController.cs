@@ -15,6 +15,8 @@ public class PlayerStateController : MonoBehaviour
 
 
     private float detectionRange = 2F;
+    float fovAngle = 45f; // Field of view angle
+    float fovDistance = 3f; // Distance of the cone
 
     private void StartComponents()
     {
@@ -43,13 +45,25 @@ public class PlayerStateController : MonoBehaviour
         {
             checkForInteractable();
         }
-
+        RenderEnemiesInFOV();
+        MarkNearbyEnemiesAsSeen();
 
     }
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+
+        Vector2 playerPosition = transform.position;
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 forwardDirection = (mousePosition - playerPosition).normalized;
+
+        Vector2 leftBoundary = Quaternion.Euler(0, 0, fovAngle / 2) * forwardDirection;
+        Vector2 rightBoundary = Quaternion.Euler(0, 0, -fovAngle / 2) * forwardDirection;
+
+        Gizmos.DrawLine(transform.position, transform.position + (Vector3)leftBoundary * fovDistance);
+        Gizmos.DrawLine(transform.position, transform.position + (Vector3)rightBoundary * fovDistance);
     }
 
     private void OnGUI()
@@ -94,7 +108,7 @@ public class PlayerStateController : MonoBehaviour
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         // Compare the mouse position with the player's position
-        if ( mousePosition.x > transform.position.x)
+        if (mousePosition.x > transform.position.x)
         {
             spriteRenderer.flipX = true; // Facing right
         }
@@ -102,6 +116,53 @@ public class PlayerStateController : MonoBehaviour
         {
             spriteRenderer.flipX = false; // Facing left
         }
+    }
+
+    void RenderEnemiesInFOV()
+    {
+        float fovAngle = 45f; // Field of view angle
+        float fovDistance = 10f; // Distance of the cone
+        Vector2 playerPosition = transform.position;
+
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 forwardDirection = (mousePosition - playerPosition).normalized;
+
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(playerPosition, fovDistance);
+
+        foreach (var hitCollider in hitColliders)
+        {
+            Vector2 directionToTarget = (hitCollider.transform.position - transform.position).normalized;
+            float angleToTarget = Vector2.Angle(forwardDirection, directionToTarget);
+
+            if (angleToTarget <= fovAngle / 2 && hitCollider.CompareTag("Enemy"))
+            {
+                EnemyController enemy = hitCollider.GetComponent<EnemyController>();
+                if (enemy != null)
+                {
+                    VisibilityManager.ReportSeenEnemy(enemy);
+                }
+            }
+        }
+
+        VisibilityManager.UpdateVisibility();
+    }
+
+    void MarkNearbyEnemiesAsSeen()
+    {
+        Vector2 playerPosition = transform.position;
+
+        // Get all enemies within the proximity radius
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(playerPosition, detectionRange, LayerMask.GetMask("Enemy"));
+
+        foreach (var hitCollider in hitColliders)
+        {
+            EnemyController enemy = hitCollider.GetComponent<EnemyController>();
+            if (enemy != null)
+            {
+                VisibilityManager.ReportSeenEnemy(enemy);
+            }
+        }
+        VisibilityManager.UpdateVisibility();
     }
 }
 

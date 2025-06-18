@@ -8,8 +8,6 @@ public class PatrolPath : MonoBehaviour
     public int length { get => patrolPoints.Count; }
 
     [Header("Gizmos")]
-    public Color gizmoColor = Color.red;
-    public float gizmoRadius = 0.25f;
     public Color lineColor = Color.green;
 
     public struct PathPoint
@@ -54,8 +52,6 @@ public class PatrolPath : MonoBehaviour
         };
     }
 
-
-
     private void OnDrawGizmos()
     {
 
@@ -68,8 +64,6 @@ public class PatrolPath : MonoBehaviour
             {
                 return;
             }
-            Gizmos.color = gizmoColor;
-            Gizmos.DrawSphere(point.position, gizmoRadius);
         }
 
         for (int i = patrolPoints.Count - 1; i > 0; i--)

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -39,14 +40,12 @@ public class EnemyPatrolling : EnemyState
 
     public override void UpdateState()
     {
-        CheckForSounds();
-
         if (patrolPath.length < 2)
         {
             Debug.LogError("Patrol path is not set up correctly");
             return;
         }
-
+        CheckForSounds();
         if (!isInitialized)
         {
             currentIndex = patrolPath.GetClosestPathPoint(enemyController.transform.position).Index;
@@ -79,24 +78,6 @@ public class EnemyPatrolling : EnemyState
 
     }
 
-    void CheckForSounds()
-    {
-        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, detectionRadius);
-        foreach (var hitCollider in hitColliders)
-        {
-            ObjectSound sound = hitCollider.GetComponent<ObjectSound>();
-            if (sound != null)
-            {
-                enemyController.transitionToState(enemyController.chasingState);
-            }
-        }
-    }
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red; // Set the color of the gizmo
-        Gizmos.DrawWireSphere(transform.position, detectionRadius); // Draw a wireframe sphere
-    }
 
 
     public override void EnterState(EnemyController enemyMovmentController)
@@ -104,5 +85,24 @@ public class EnemyPatrolling : EnemyState
         base.EnterState(enemyMovmentController);
 
     }
+
+    void CheckForSounds()
+    {
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, detectionRadius);
+        foreach (var hitCollider in hitColliders)
+        {
+            if (hitCollider.CompareTag("Sound"))
+            {
+                ObjectSound sound = hitCollider.GetComponent<ObjectSound>();
+                if (sound != null)
+                {
+                    enemyController.currentTarget = hitCollider.transform;
+                    enemyController.transitionToState(enemyController.searchingState);
+                }
+            }
+        }
+    }
+
+
 }
 

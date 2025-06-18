@@ -1,12 +1,17 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CircleCollider2D))]
 public class ObjectSound : MonoBehaviour {
-    public int soundradius;
+    public float soundHeight;
+    public AudioClip sound;
+
+    public Vector2 soundPosition;
 
     private void Start()
     {
-        GetComponent<CircleCollider2D>().isTrigger = true;
-        GetComponent<CircleCollider2D>().radius = soundradius;
+        if (sound != null)
+        {
+            // GameObject soundInstance = Instantiate(sound, soundPosition, Quaternion.identity);
+            // soundInstance.transform.SetParent(transform);
+        }
     }
 }

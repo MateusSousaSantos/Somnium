@@ -1,12 +1,9 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CircleCollider2D))]
-public class CustomObjectSound : ObjectSound {
-    public float stepSoundRadius;
-
-    private void Start()
+public class StepSound : ObjectSound {
+    private void Awake()
     {
-        CircleCollider2D collider = GetComponent<CircleCollider2D>();
-        soundradius = (int)stepSoundRadius;
+        soundHeight = 0.5f; // Adjust the height of the sound above the object
+        soundPosition = transform.position;
     }
 }

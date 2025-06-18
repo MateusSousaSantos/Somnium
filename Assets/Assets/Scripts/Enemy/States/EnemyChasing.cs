@@ -2,10 +2,9 @@ using UnityEngine;
 using UnityEngine.AI;
 public class EnemyChasing : EnemyState
 {
-    public int detectionRadius = 5;
 
     [SerializeField]
-    private Vector3 LastHeardSoundPosition = Vector3.zero;
+    public GameObject target;
 
     NavMeshAgent navMeshAgent;
     public override void ExitState()
@@ -14,41 +13,42 @@ public class EnemyChasing : EnemyState
 
     public override void UpdateState()
     {
-        CheckForSounds();
-        navMeshAgent.SetDestination(LastHeardSoundPosition);
-
+        // navMeshAgent.SetDestination(LastHeardSoundPosition);
+        CheckForPlayer();
+        if (target == null)
+        {
+            enemyController.transitionToState(enemyController.searchingState);
+            return;
+        }
+        navMeshAgent.SetDestination(target.transform.position);
     }
 
     public override void EnterState(EnemyController enemyMovmentController)
     {
         navMeshAgent = GetComponent<NavMeshAgent>();
         base.EnterState(enemyMovmentController);
+        enemyController.detectionRadius = 7f; // Set the detection radius for chasing
     }
-
-    void CheckForSounds()
+    void CheckForPlayer()
     {
-        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, detectionRadius);
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, enemyController.detectionRadius);
         foreach (var hitCollider in hitColliders)
         {
-            ObjectSound sound = hitCollider.GetComponent<ObjectSound>();
-            if (sound != null)
+            if (hitCollider.CompareTag("Player"))
             {
-                LastHeardSoundPosition = sound.transform.position;
+                PlayerStateController player = hitCollider.GetComponent<PlayerStateController>();
+                if (player != null)
+                {
+                   
+                    target = hitCollider.gameObject;
+                    return;
+                }
             }
-
         }
     }
 
     void OnDrawGizmos()
     {
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
-
-        Gizmos.color = Color.green;
-        if (LastHeardSoundPosition != Vector3.zero)
-        {
-            Gizmos.DrawLine(transform.position, LastHeardSoundPosition);
-        }
     }
 
 
