@@ -18,8 +18,9 @@ public class Bullet357 : MonoBehaviour
         {
             //transform.rotation ao  contrario
             transform.rotation = Quaternion.Euler(0, 0, 180);
-            Instantiate(bulletImpactPrefab, transform.position, transform.rotation);
+            GameObject impact = Instantiate(bulletImpactPrefab, transform.position, transform.rotation);
             Destroy(gameObject);
+            Destroy(impact, 1f);
             
         }
     }

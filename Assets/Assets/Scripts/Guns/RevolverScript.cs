@@ -7,8 +7,12 @@ public class RevolverScript : MonoBehaviour
 {
     [SerializeField] GameObject bullet;
     private Transform barrel;
+
+    private PlayerStats playerStats;
     private float fireRate = 1f;
 
+    private float maxDistance = 10f;
+    private float distanceWeightInfluence = 0.5f; // Reduces distance impact on accuracy (0-1, lower = less impact)
     private Animator animator;
 
     private int maxAmmo = 6;
@@ -17,18 +21,17 @@ public class RevolverScript : MonoBehaviour
     [SerializeField] private bool canShoot = true;
     private GameObject lanter; // Add this line
 
-    private DynamicCircleCursor dynamicCircleCursor;
 
 
     private void Start()
     {
         //retirar codigo abaixo, quando inventario estiver feito
-        dynamicCircleCursor = FindObjectOfType<DynamicCircleCursor>();
         currentAmmo = maxAmmo;
         barrel = transform.Find("Barrel");
         canShoot = true;
         animator = GetComponent<Animator>();
         lanter = transform.Find("Lanter").gameObject;
+        playerStats = GetComponentInParent<PlayerStats>();
     }
     private void Update()
     {
@@ -64,6 +67,26 @@ public class RevolverScript : MonoBehaviour
 
     }
 
+    public float AccuracyFromConcentration(float playersConcentration)
+    {
+        Transform playerTransform = playerStats.transform;
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePosition.z = 0;
+        float distanceFromPlayer = Vector3.Distance(mousePosition, playerTransform.position);
+
+        // Normalize concentration to 0-1 range (concentration ranges 0-100)
+        float concentrationFactor = playersConcentration / 100f;
+
+        // Distance accuracy: 0 when on player (high accuracy), 1 when at/beyond maxDistance (low accuracy)
+        float distanceAccuracy = Mathf.Clamp01(distanceFromPlayer / maxDistance);
+
+        // Final accuracy: lower concentration = lower accuracy, farther distance = lower accuracy
+        // distanceWeightInfluence reduces distance impact (0.5 = 50% of distance weight)
+        float accuracy = concentrationFactor * (1f - distanceAccuracy * distanceWeightInfluence);
+
+        return accuracy;
+    }
+
     private void RevolverShoot()
     {
 
@@ -71,9 +94,11 @@ public class RevolverScript : MonoBehaviour
         {
             if (currentAmmo > 0)
             {
-                float x = dynamicCircleCursor.targetRadius;
-                float randomOffset = UnityEngine.Random.Range(-10 , 10);
-                randomOffset *= (x - 0.2f) * 2;
+                // Get accuracy and convert to randomness factor (higher accuracy = lower randomness)
+                float accuracy = AccuracyFromConcentration(playerStats.concentration);
+                float randomness = 1f - accuracy; // Invert: 1 = max randomness, 0 = no randomness
+                float maxRandomOffset = 10f;
+                float randomOffset = UnityEngine.Random.Range(-maxRandomOffset * randomness, maxRandomOffset * randomness);
 
                 Quaternion rotation = barrel.rotation * Quaternion.Euler(barrel.rotation.x, barrel.rotation.y, barrel.rotation.z + randomOffset);
                 animator.SetTrigger("Shoot");
@@ -153,5 +178,28 @@ public class RevolverScript : MonoBehaviour
         }
     }
 
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+
+        if (playerStats == null)
+            return;
+
+        Transform playerTransform = playerStats.transform;
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePosition.z = 0;
+
+        Vector3 direction = mousePosition - playerTransform.position;
+
+        // Clamp the direction to maxDistance
+        if (direction.magnitude > maxDistance)
+        {
+            direction = direction.normalized * maxDistance;
+        }
+
+        Vector3 endPoint = playerTransform.position + direction;
+
+        Gizmos.DrawLine(barrel.position, endPoint);
+    }
 
 }

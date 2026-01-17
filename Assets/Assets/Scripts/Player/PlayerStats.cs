@@ -9,6 +9,9 @@ public class PlayerStats : MonoBehaviour
     public int currentHealth = 100;
     public int maxHealth = 100;
 
+    //current gun
+    public GameObject currentGun;
+
     public int speed = 5; 
     public float concentration = 100f; // Concentration level of the player
 
@@ -17,6 +20,7 @@ public class PlayerStats : MonoBehaviour
         playerStateController = GetComponent<PlayerStateController>();
         deadState = GetComponent<DeadState>();
         currentHealth = maxHealth;
+        currentGun = transform.Find("Revolver").gameObject;
     }
 
     private void Update(){
