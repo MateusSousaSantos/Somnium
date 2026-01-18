@@ -41,11 +41,10 @@ public class IdleState : PlayerState
                 playerMovmentController.transitionToState(playerMovmentController.walkingState);
             }
         }
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            playerMovmentController.transitionToState(playerMovmentController.crouchState);
+            playerMovmentController.transitionToState(playerMovmentController.crouchIdleState);
         }
-
     }
 
     public void OnMove(InputValue value)

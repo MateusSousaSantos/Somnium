@@ -1,7 +1,9 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class CrouchState : PlayerState
+public class CrouchIdleState : PlayerState
 {
     #region variables
     private Vector2 moveInput;
@@ -15,14 +17,13 @@ public class CrouchState : PlayerState
     {
         playerStats = playerMovmentController.GetComponent<PlayerStats>();
         playerStats.speed = 2; // Set speed to a lower value when crouching
-        playerStats.concentration -= 25f; // Decrease concentration when crouching
         base.EnterState(playerMovmentController);
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
         animator = playerMovmentController.GetComponent<Animator>();
         rigidbody.linearVelocity = 0 * moveInput; // Reset velocity to zero when entering crouch state
         if (animator != null)
         {
-            animator.SetTrigger("crouch"); // Set animation parameter
+            animator.SetTrigger("crouchIdle"); // Set animation parameter
         }
     }
 
@@ -34,32 +35,18 @@ public class CrouchState : PlayerState
     public override void UpdateState()
     {
         rigidbody.linearVelocity = moveInput * playerStats.speed; 
-        if (moveInput != Vector2.zero)
+        
+        // If player starts moving while still holding Shift, transition to crouch moving state
+        if (moveInput != Vector2.zero && Input.GetKey(KeyCode.LeftShift))
         {
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                animator.SetTrigger("crouchMoving");
-            }
-            else
-            {
-                playerMovmentController.transitionToState(playerMovmentController.walkingState);
-            }
-        }
-        else if (moveInput == Vector2.zero)
-        {
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                playerMovmentController.transitionToState(playerMovmentController.crouchIdleState);
-            }
-            else
-            {
-                playerMovmentController.transitionToState(playerMovmentController.idleState);
-            }
+            animator.SetTrigger("crouchMoving");
+            playerMovmentController.transitionToState(playerMovmentController.crouchState);
         }
         
+        // If player releases Shift while idle, go back to idle
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            playerMovmentController.transitionToState(playerMovmentController.walkingState);
+            playerMovmentController.transitionToState(playerMovmentController.idleState);
         }
     }
 
@@ -68,3 +55,4 @@ public class CrouchState : PlayerState
         moveInput = inputValue.Get<Vector2>();
     }
 }
+

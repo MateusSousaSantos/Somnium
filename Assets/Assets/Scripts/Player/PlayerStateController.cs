@@ -9,6 +9,7 @@ public class PlayerStateController : MonoBehaviour
     public IdleState idleState;
     public WalkingState walkingState;
     public CrouchState crouchState;
+    public CrouchIdleState crouchIdleState;
     public DeadState deadState;
     private SpriteRenderer spriteRenderer;
 
@@ -17,6 +18,7 @@ public class PlayerStateController : MonoBehaviour
         idleState = GetComponent<IdleState>();
         walkingState = GetComponent<WalkingState>();
         crouchState = GetComponent<CrouchState>();
+        crouchIdleState = GetComponent<CrouchIdleState>();
         deadState = GetComponent<DeadState>();
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
@@ -24,7 +26,7 @@ public class PlayerStateController : MonoBehaviour
     void Start()
     {
         StartComponents();
-        transitionToState(walkingState);
+        transitionToState(idleState);
     }
 
     void Update()
