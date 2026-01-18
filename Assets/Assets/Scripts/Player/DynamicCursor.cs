@@ -39,7 +39,7 @@ public class DynamicCircleCursor : MonoBehaviour
 
     private void OnGUI()
     {
-        GUI.Label(new Rect(10, 10, 200, 20), "Accuracy: " + accuracy.ToString("F2"));
+        GUI.Label(new Rect(10, 15, 200, 20), "Accuracy: " + accuracy.ToString("F2"));
     }
 
 }

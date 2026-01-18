@@ -21,7 +21,7 @@ public class CrouchState : PlayerState
         base.EnterState(playerMovmentController);
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
         animator = playerMovmentController.GetComponent<Animator>();
-        rigidbody.velocity = 0 * moveInput; // Reset velocity to zero when entering crouch state
+        rigidbody.linearVelocity = 0 * moveInput; // Reset velocity to zero when entering crouch state
         if (animator != null)
         {
             animator.SetTrigger("crouch"); // Set animation parameter
@@ -37,7 +37,7 @@ public class CrouchState : PlayerState
     {
 
 
-        rigidbody.velocity = moveInput * playerStats.speed; 
+        rigidbody.linearVelocity = moveInput * playerStats.speed; 
         if (moveInput != Vector2.zero)
         {
             if (Input.GetKey(KeyCode.LeftShift))

@@ -53,7 +53,7 @@ public class WalkingState : PlayerState
         {
             playerMovmentController.transitionToState(playerMovmentController.crouchState);
         }
-        rigidbody.velocity = moveInput * playerStats.speed;
+        rigidbody.linearVelocity = moveInput * playerStats.speed;
 
 
     }
