@@ -31,6 +31,8 @@ public class PlayerStateController : MonoBehaviour
 
     void Update()
     {
+        if (InventoryUIController.IsOpen) return;
+
         currentState.UpdateState();
 
         UpdateFacingDirection();

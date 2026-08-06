@@ -35,6 +35,8 @@ public class RevolverScript : MonoBehaviour
     }
     private void Update()
     {
+        if (InventoryUIController.IsOpen) return;
+
         RevolverAim();
         RevolverShoot();
         RevolverReload();
