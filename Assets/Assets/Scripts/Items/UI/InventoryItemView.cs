@@ -13,8 +13,10 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
     private const float HighlightBorderThickness = 3f;
 
     public PlacedItem PlacedItem => placedItem;
+    public RectTransform RectTransform => rectTransform;
 
     private InventoryGrid grid;
+    private InventoryPanelView sourcePane;
     private PlacedItem placedItem;
     private int cellSize;
     private InventoryUIController owner;
@@ -25,11 +27,12 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
     private int dragStartRotation;
     private bool isDragging;
 
-    public void Initialize(InventoryGrid inventoryGrid, PlacedItem item, int cellPixelSize, InventoryUIController owningController)
+    public void Initialize(InventoryPanelView pane, PlacedItem item, InventoryUIController owningController)
     {
-        grid = inventoryGrid;
+        sourcePane = pane;
+        grid = pane.Grid;
         placedItem = item;
-        cellSize = cellPixelSize;
+        cellSize = pane.CellSize;
         owner = owningController;
         rectTransform = GetComponent<RectTransform>();
 
@@ -104,7 +107,8 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        owner?.SelectItem(this);
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+        owner?.ShowItemView(this);
     }
 
     // Restricts click/drag hit-testing to the item's actual occupied cells rather than its
@@ -143,6 +147,17 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
         isDragging = true;
         dragStartAnchoredPos = rectTransform.anchoredPosition;
         dragStartRotation = placedItem.rotationSteps;
+
+        // Reparent to a top-level drag layer while dragging. Canvas render order follows
+        // sibling index, and this view otherwise stays parented under its source pane for
+        // the whole drag - so dragging it over a pane with a HIGHER sibling index (e.g.
+        // from the container's pane onto the player's own pane) would render it behind
+        // that pane's cell backgrounds/items instead of on top, regardless of where the
+        // pointer actually is. worldPositionStays=true keeps it visually in place.
+        if (owner != null && owner.DragLayer != null)
+        {
+            rectTransform.SetParent(owner.DragLayer, true);
+        }
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -154,36 +169,111 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
     {
         isDragging = false;
 
-        // Snap-target math must undo the same center-pivot offset UpdateVisualPosition applies,
-        // using the footprint at the item's rotation as of drag-end.
-        Vector2Int fp = GetRotatedFootprintCellSize();
-        int targetX = Mathf.RoundToInt((rectTransform.anchoredPosition.x - fp.x * cellSize / 2f) / cellSize);
-        int targetY = Mathf.RoundToInt((-rectTransform.anchoredPosition.y - fp.y * cellSize / 2f) / cellSize);
+        // Equip slot is a special-cased drop target: it's not one of owner.GetActivePanes()
+        // (no InventoryGrid/shape fitting - see EquipmentSlotView), so it's checked here first.
+        if (owner.equipSlotView != null && owner.equipSlotView.ContainsScreenPoint(eventData.position, eventData.pressEventCamera))
+        {
+            if (TryDropOnEquipSlot()) return;
+            RevertDrag();
+            return;
+        }
 
-        if (grid.MoveItem(placedItem, targetX, targetY, placedItem.rotationSteps))
+        InventoryPanelView targetPane = FindPaneUnderPointer(eventData);
+        if (targetPane == null)
         {
-            UpdateVisualPosition();
+            RevertDrag();
+            return;
         }
-        else
+
+        // Project this item's world-space center (the rect's pivot, which UpdateVisualPosition
+        // treats as the box center) into the target pane's grid-local space to find the target
+        // cell. Same computation whether the target is the source pane or the other one -
+        // this view is parented under the shared DragLayer for the whole drag (see
+        // OnBeginDrag), not under either pane's GridContainer, so anchoredPosition alone
+        // can't be used to find a target cell in ANY pane anymore, source included.
+        Camera eventCamera = eventData.pressEventCamera;
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, rectTransform.position);
+        if (!targetPane.TryGetGridLocalPoint(screenPoint, eventCamera, out Vector2 localPoint))
         {
-            // Revert: restore the original grid position/rotation and snap visuals back.
-            grid.MoveItem(placedItem, placedItem.gridX, placedItem.gridY, dragStartRotation);
-            rectTransform.anchoredPosition = dragStartAnchoredPos;
-            UpdateVisualRotation();
+            RevertDrag();
+            return;
         }
+
+        Vector2Int fp = GetRotatedFootprintCellSize();
+        int destCellSize = targetPane.CellSize;
+        int targetX = Mathf.RoundToInt((localPoint.x - fp.x * destCellSize / 2f) / destCellSize);
+        int targetY = Mathf.RoundToInt((-localPoint.y - fp.y * destCellSize / 2f) / destCellSize);
+
+        if (targetPane == sourcePane)
+        {
+            if (grid.MoveItem(placedItem, targetX, targetY, placedItem.rotationSteps))
+            {
+                rectTransform.SetParent(sourcePane.GridContainer, false);
+                UpdateVisualPosition();
+            }
+            else
+            {
+                RevertDrag();
+            }
+            return;
+        }
+
+        if (!targetPane.Grid.CanPlaceItem(placedItem.itemData, placedItem.rotationSteps, targetX, targetY))
+        {
+            RevertDrag();
+            return;
+        }
+
+        grid.RemoveItem(placedItem);
+        targetPane.Grid.PlaceItem(placedItem.itemData, placedItem.rotationSteps, targetX, targetY, placedItem.quantity);
+
+        // This view is currently parented under the drag layer (not either pane's
+        // GridContainer), so RefreshBothPanes' own "destroy existing item views" pass
+        // wouldn't find it - destroy it explicitly instead of relying on that.
+        Destroy(gameObject);
+        owner.RefreshBothPanes();
+    }
+
+    // Equips this item (if the slot accepts its ItemType and is empty), removing it from its
+    // source grid. Shape/rotation don't matter here - the slot just wants the ItemData.
+    private bool TryDropOnEquipSlot()
+    {
+        if (!owner.equipSlotView.TryAccept(placedItem.itemData, placedItem.quantity)) return false;
+
+        grid.RemoveItem(placedItem);
+        Destroy(gameObject);
+        owner.RefreshBothPanes();
+        return true;
+    }
+
+    // Which currently-visible pane (if any) the dragged item's center is over. Tested
+    // against each pane's actual cell grid (ContainsScreenPoint), not its GridContainer's
+    // own RectTransform rect - a pane's rect can be a larger, hand-authored art size
+    // (autoSizeToGrid = false) that shouldn't affect where drops are allowed to land.
+    private InventoryPanelView FindPaneUnderPointer(PointerEventData eventData)
+    {
+        foreach (InventoryPanelView pane in owner.GetActivePanes())
+        {
+            if (pane.ContainsScreenPoint(eventData.position, eventData.pressEventCamera))
+                return pane;
+        }
+        return null;
+    }
+
+    // Restore the original grid position/rotation, reparent back to the source pane
+    // (undoing the drag-layer reparent from OnBeginDrag), and snap visuals back.
+    private void RevertDrag()
+    {
+        rectTransform.SetParent(sourcePane.GridContainer, false);
+        grid.MoveItem(placedItem, placedItem.gridX, placedItem.gridY, dragStartRotation);
+        rectTransform.anchoredPosition = dragStartAnchoredPos;
+        UpdateVisualRotation();
     }
 
     // Bounding-box size (in cells) of a shape, given as a list of occupied cell offsets.
     private Vector2Int GetFootprintCellSize(List<Vector2Int> shape)
     {
-        int maxX = 0;
-        int maxY = 0;
-        foreach (Vector2Int cell in shape)
-        {
-            if (cell.x + 1 > maxX) maxX = cell.x + 1;
-            if (cell.y + 1 > maxY) maxY = cell.y + 1;
-        }
-        return new Vector2Int(maxX, maxY);
+        return ItemShapeUtility.GetFootprintSize(shape);
     }
 
     private Vector2Int GetRotatedFootprintCellSize()

@@ -9,7 +9,8 @@ public class PlayerStats : MonoBehaviour
     public int currentHealth = 100;
     public int maxHealth = 100;
 
-    //current gun
+    // Kept in sync with the weapon EquipmentSlot by PlayerWeaponController - null whenever
+    // no weapon is equipped, so consumers (e.g. DynamicCircleCursor) must null-check it.
     public GameObject currentGun;
 
     public int speed = 5; 
@@ -20,7 +21,6 @@ public class PlayerStats : MonoBehaviour
         playerStateController = GetComponent<PlayerStateController>();
         deadState = GetComponent<DeadState>();
         currentHealth = maxHealth;
-        currentGun = transform.Find("Revolver").gameObject;
     }
 
     private void Update(){

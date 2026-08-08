@@ -1,18 +1,14 @@
 using System.Collections;
-using System.Xml.Schema;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class RevolverScript : MonoBehaviour
+public class RevolverScript : GunBase
 {
     [SerializeField] GameObject bullet;
     private Transform barrel;
 
-    private PlayerStats playerStats;
     private float fireRate = 1f;
 
-    private float maxDistance = 10f;
-    private float distanceWeightInfluence = 0.5f; // Reduces distance impact on accuracy (0-1, lower = less impact)
     private Animator animator;
 
     private int maxAmmo = 6;
@@ -23,21 +19,22 @@ public class RevolverScript : MonoBehaviour
 
 
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
+
         //retirar codigo abaixo, quando inventario estiver feito
         currentAmmo = maxAmmo;
         barrel = transform.Find("Barrel");
         canShoot = true;
         animator = GetComponent<Animator>();
         lanter = transform.Find("Lanter").gameObject;
-        playerStats = GetComponentInParent<PlayerStats>();
     }
-    private void Update()
+    protected override void Update()
     {
+        base.Update(); // handles the InventoryUIController.IsOpen guard + aiming
         if (InventoryUIController.IsOpen) return;
 
-        RevolverAim();
         RevolverShoot();
         RevolverReload();
 
@@ -69,26 +66,6 @@ public class RevolverScript : MonoBehaviour
 
     }
 
-    public float AccuracyFromConcentration(float playersConcentration)
-    {
-        Transform playerTransform = playerStats.transform;
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePosition.z = 0;
-        float distanceFromPlayer = Vector3.Distance(mousePosition, playerTransform.position);
-
-        // Normalize concentration to 0-1 range (concentration ranges 0-100)
-        float concentrationFactor = playersConcentration / 100f;
-
-        // Distance accuracy: 0 when on player (high accuracy), 1 when at/beyond maxDistance (low accuracy)
-        float distanceAccuracy = Mathf.Clamp01(distanceFromPlayer / maxDistance);
-
-        // Final accuracy: lower concentration = lower accuracy, farther distance = lower accuracy
-        // distanceWeightInfluence reduces distance impact (0.5 = 50% of distance weight)
-        float accuracy = concentrationFactor * (1f - distanceAccuracy * distanceWeightInfluence);
-
-        return accuracy;
-    }
-
     private void RevolverShoot()
     {
 
@@ -97,7 +74,7 @@ public class RevolverScript : MonoBehaviour
             if (currentAmmo > 0)
             {
                 // Get accuracy and convert to randomness factor (higher accuracy = lower randomness)
-                float accuracy = AccuracyFromConcentration(playerStats.concentration);
+                float accuracy = GetAccuracy();
                 float randomness = 1f - accuracy; // Invert: 1 = max randomness, 0 = no randomness
                 float maxRandomOffset = 10f;
                 float randomOffset = UnityEngine.Random.Range(-maxRandomOffset * randomness, maxRandomOffset * randomness);
@@ -122,27 +99,6 @@ public class RevolverScript : MonoBehaviour
             animator.SetTrigger("Reload");
             int missingAmmo = maxAmmo - currentAmmo;
             StartCoroutine(ReloadCooldown(0.5f, missingAmmo));
-        }
-    }
-
-    private void RevolverAim()
-    {
-        Vector3 mousePos = Input.mousePosition;
-        Vector3 screenPoint = Camera.main.WorldToScreenPoint(transform.position);
-
-        Vector2 offset = new Vector2(screenPoint.x + 1f - mousePos.x, screenPoint.y + 1f - mousePos.y);
-
-        float angle = Mathf.Atan2(offset.y, offset.x) * Mathf.Rad2Deg;
-
-        transform.rotation = Quaternion.Euler(0, 0, angle);
-
-        if (mousePos.x > screenPoint.x)
-        {
-            transform.Rotate(180, 0, 0);
-        }
-        else
-        {
-            transform.Rotate(0, 0, 0);
         }
     }
 
@@ -193,10 +149,10 @@ public class RevolverScript : MonoBehaviour
 
         Vector3 direction = mousePosition - playerTransform.position;
 
-        // Clamp the direction to maxDistance
-        if (direction.magnitude > maxDistance)
+        // Clamp the direction to AccuracySystem.MaxDistance
+        if (direction.magnitude > AccuracySystem.MaxDistance)
         {
-            direction = direction.normalized * maxDistance;
+            direction = direction.normalized * AccuracySystem.MaxDistance;
         }
 
         Vector3 endPoint = playerTransform.position + direction;

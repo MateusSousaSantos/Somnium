@@ -16,8 +16,8 @@ MonoBehaviour:
   itemDescription: Standart Ammo of caliber 357
   itemIcon: {fileID: 21300000, guid: 3825e9c6ea43d7f4eb6b824553750d74, type: 3}
   itemType: 1
-  isStackable: 0
-  maxStackSize: 1
+  isStackable: 1
+  maxStackSize: 16
   shape:
   - {x: 0, y: 0}
   - {x: 1, y: 0}

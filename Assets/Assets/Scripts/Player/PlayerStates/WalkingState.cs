@@ -45,17 +45,25 @@ public class WalkingState : PlayerState
 
     public override void UpdateState()
     {
-        if (moveInput == Vector2.zero)
-        {
-            playerMovmentController.transitionToState(playerMovmentController.idleState);
-        }
+        // else-if: these two used to be independent ifs, so stopping and pressing crouch in
+        // the same frame fired both transitions (Walking -> Idle -> Crouch within one Update),
+        // double-calling EnterState/ExitState. Shift is checked first so that simultaneous
+        // case still lands on Crouch (matching player intent) instead of losing the
+        // GetKeyDown(Shift) edge to the Idle transition and missing the crouch entirely.
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             playerMovmentController.transitionToState(playerMovmentController.crouchState);
         }
+        else if (moveInput == Vector2.zero)
+        {
+            playerMovmentController.transitionToState(playerMovmentController.idleState);
+        }
+
+        // Kept after the transition checks (matching the original order) so a same-frame
+        // transition's new speed (e.g. Crouch's slower speed) is reflected immediately -
+        // rigidbody/playerStats are the same shared components regardless of which state
+        // object is currently mid-UpdateState.
         rigidbody.linearVelocity = moveInput * playerStats.speed;
-
-
     }
 
     private void OnMove(InputValue inputValue)

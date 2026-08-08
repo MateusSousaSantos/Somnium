@@ -45,4 +45,18 @@ public static class ItemShapeUtility
         }
         return current;
     }
+
+    // Bounding-box size (in cells) of a shape, given as a list of occupied cell offsets.
+    // Shared by InventoryItemView (grid rendering) and EquipmentSlotView (drag-out targeting).
+    public static Vector2Int GetFootprintSize(List<Vector2Int> shape)
+    {
+        int maxX = 0;
+        int maxY = 0;
+        foreach (Vector2Int cell in shape)
+        {
+            if (cell.x + 1 > maxX) maxX = cell.x + 1;
+            if (cell.y + 1 > maxY) maxY = cell.y + 1;
+        }
+        return new Vector2Int(maxX, maxY);
+    }
 }

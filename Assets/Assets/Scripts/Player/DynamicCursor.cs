@@ -23,7 +23,18 @@ public class DynamicCircleCursor : MonoBehaviour
 
     private void Update()
     {
-        accuracy = playerStats.currentGun.GetComponent<RevolverScript>().AccuracyFromConcentration(playerStats.concentration);
+        // currentGun is null whenever no weapon is equipped (see PlayerWeaponController) -
+        // there's nothing to aim, so hide the cursor entirely instead of showing a
+        // worst-case-accuracy circle. GunBase-typed (not RevolverScript) so this works for any
+        // equipped gun via the shared AccuracySystem.
+        GunBase gun = playerStats.currentGun != null ? playerStats.currentGun.GetComponent<GunBase>() : null;
+        if (spriteRenderer != null) spriteRenderer.enabled = gun != null;
+        if (gun == null)
+        {
+            accuracy = 0f;
+            return;
+        }
+        accuracy = gun.GetAccuracy();
 
         // Map accuracy to cursor size: high accuracy = small cursor, low accuracy = big cursor
         // Linear mapping from [0, 1] accuracy to [maxSize, minSize] cursor size

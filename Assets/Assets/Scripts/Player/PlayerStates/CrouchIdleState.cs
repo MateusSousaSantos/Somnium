@@ -17,6 +17,7 @@ public class CrouchIdleState : PlayerState
     {
         playerStats = playerMovmentController.GetComponent<PlayerStats>();
         playerStats.speed = 2; // Set speed to a lower value when crouching
+        playerStats.concentration -= 25f; // Decrease concentration when crouching (paired with the += 25f in ExitState)
         base.EnterState(playerMovmentController);
         rigidbody = playerMovmentController.GetComponent<Rigidbody2D>();
         animator = playerMovmentController.GetComponent<Animator>();

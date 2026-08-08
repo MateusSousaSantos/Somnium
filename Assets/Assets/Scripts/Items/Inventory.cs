@@ -4,14 +4,24 @@ using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
+    // A single starting-item entry: what to add and how many. Used by any Inventory
+    // (container or otherwise) to author its initial contents from the Inspector,
+    // without per-container code.
+    [System.Serializable]
+    public struct ItemStack
+    {
+        public ItemData itemData;
+        public int quantity;
+    }
+
     public int gridWidth = 8;
     public int gridHeight = 5;
 
     public InventoryGrid Grid { get; private set; }
 
-    [Header("Debug / test items")]
-    public ItemData debugAmmo357;
-    public ItemData debugKnife;
+
+    [Header("Starting items")]
+    public List<ItemStack> startingItems = new List<ItemStack>();
 
     void Awake()
     {
@@ -20,8 +30,10 @@ public class Inventory : MonoBehaviour
 
     void Start()
     {
-        if (debugAmmo357 != null) AddItem(debugAmmo357, 12);
-        if (debugKnife != null) AddItem(debugKnife,1);
+        foreach (ItemStack stack in startingItems)
+        {
+            if (stack.itemData != null) AddItem(stack.itemData, stack.quantity);
+        }
     }
 
     // Finds the first free position (scanning left-to-right, top-to-bottom)
@@ -40,11 +52,5 @@ public class Inventory : MonoBehaviour
         }
         Debug.Log("Inventory full, could not place " + itemData.itemName);
         return null;
-    }
-
-    [ContextMenu("Debug Add Ammo357")]
-    private void DebugAddAmmo357()
-    {
-        if (debugAmmo357 != null) AddItem(debugAmmo357, 6);
     }
 }
