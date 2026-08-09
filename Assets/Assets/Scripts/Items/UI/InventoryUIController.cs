@@ -1,13 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Orchestrates the inventory UI: a "self" pane (always the player's own Inventory)
 // and an "other" pane (bound only while looting a container). Exposed as a singleton
 // (same idiom as PlayerReference) so world objects like LootContainer can reach it
 // without a cross-scene Inspector reference.
-[RequireComponent(typeof(Inventory))]
+//
+// Lives on its own object (under Bootstrap, alongside InventoryCanvas/EventSystem) rather than
+// on Player - it resolves the player's Inventory/EquipmentSlot via PlayerReference.Instance
+// instead of RequireComponent, the same idiom CameraFollow uses to find the player without
+// being parented under it. Awake ordering between this object and Player isn't guaranteed once
+// they're separate roots, so those lookups happen in Open()/OpenLoot() (always well after both
+// exist, since they only fire from user input) rather than being cached in Awake().
 public class InventoryUIController : MonoBehaviour
 {
     public static InventoryUIController Instance { get; private set; }
@@ -54,8 +59,6 @@ public class InventoryUIController : MonoBehaviour
         }
         Instance = this;
 
-        selfInventory = GetComponent<Inventory>();
-
         inventoryPanel.SetActive(false);
         if (otherPaneRoot != null) otherPaneRoot.SetActive(false);
         detailPanel.gameObject.SetActive(false);
@@ -67,9 +70,10 @@ public class InventoryUIController : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    private void OnToggleInventory(InputValue value)
+    // Forwarded from InventoryInputRelay (which stays on Player - PlayerInput's Send Messages
+    // notification behavior only reaches components on its own GameObject, not this one).
+    public void Toggle()
     {
-        if (!value.isPressed) return;
         if (IsOpen) Close(); else Open();
     }
 
@@ -81,6 +85,7 @@ public class InventoryUIController : MonoBehaviour
         inventoryPanel.SetActive(true);
         if (!wasOpen) PauseAndUnlockCursor();
 
+        ResolvePlayerBindings();
         selfPane.Bind(selfInventory, this, "Your Inventory");
         RebuildPanesLayout();
         CloseItemView();
@@ -96,10 +101,24 @@ public class InventoryUIController : MonoBehaviour
         if (otherPaneRoot != null) otherPaneRoot.SetActive(true);
         if (!wasOpen) PauseAndUnlockCursor();
 
+        ResolvePlayerBindings();
         selfPane.Bind(selfInventory, this, "Your Inventory");
         otherPane.Bind(otherInventory, this, label);
         RebuildPanesLayout();
         CloseItemView();
+    }
+
+    // Re-resolves selfInventory and the equip slot view's bound EquipmentSlot from
+    // PlayerReference.Instance - looked up fresh on every open rather than cached in Awake, see
+    // the class-level comment for why.
+    private void ResolvePlayerBindings()
+    {
+        PlayerReference player = PlayerReference.Instance;
+        selfInventory = player != null ? player.GetComponent<Inventory>() : null;
+        if (equipSlotView != null)
+        {
+            equipSlotView.SetSlot(player != null ? player.GetComponent<EquipmentSlot>() : null);
+        }
     }
 
     public void Close()
@@ -171,12 +190,13 @@ public class InventoryUIController : MonoBehaviour
         if (IsOpen && currentLootContainer != null) yield return otherPane;
     }
 
-    // Called after a cross-grid transfer, which destroys and recreates InventoryItemViews
-    // on both sides - any held selectedView reference would otherwise dangle.
+    // Called after a cross-grid transfer. The item-view rebuild itself now happens
+    // automatically on both sides via Inventory.Changed (see InventoryPanelView.Bind) - this
+    // just handles the bookkeeping that isn't a grid-data change: the pane layout needs to
+    // re-flow, and any held selectedView reference would otherwise dangle once views get
+    // rebuilt out from under it.
     public void RefreshBothPanes()
     {
-        selfPane.RefreshItemViews();
-        if (IsOpen && currentLootContainer != null) otherPane.RefreshItemViews();
         RebuildPanesLayout();
         CloseItemView();
     }

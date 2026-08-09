@@ -5,18 +5,25 @@ using UnityEngine;
 // previous instance on unequip or swap. Also keeps PlayerStats.currentGun pointed at
 // whichever instance (if any) is live, since DynamicCircleCursor reads accuracy through
 // that reference.
+//
+// weaponSlot is resolved via GetComponent rather than an Inspector reference - EquipmentSlot
+// lives on this same Player GameObject (alongside Inventory; see PlayerInteractor's header
+// comment for the "player owns the check" idiom), not on the equip slot's UI object, so a
+// prefab-asset-safe same-object reference is all that's needed here.
 [RequireComponent(typeof(PlayerStats))]
+[RequireComponent(typeof(EquipmentSlot))]
 public class PlayerWeaponController : MonoBehaviour
 {
-    public EquipmentSlot weaponSlot;
     public Transform gunMount;
 
+    private EquipmentSlot weaponSlot;
     private PlayerStats playerStats;
     private GameObject currentGunInstance;
 
     void Awake()
     {
         playerStats = GetComponent<PlayerStats>();
+        weaponSlot = GetComponent<EquipmentSlot>();
     }
 
     void OnEnable()

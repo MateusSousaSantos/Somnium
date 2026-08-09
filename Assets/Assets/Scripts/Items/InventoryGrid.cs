@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +10,11 @@ public class InventoryGrid
 {
     public int width;
     public int height;
+
+    // Fired whenever a placement/move/removal actually changes the grid's contents - lets
+    // bound views (InventoryPanelView) refresh themselves instead of every mutation call site
+    // having to remember to call RefreshItemViews() manually.
+    public event Action Changed;
 
     private PlacedItem[,] occupancy;
     private List<PlacedItem> placedItems = new List<PlacedItem>();
@@ -56,6 +62,7 @@ public class InventoryGrid
         };
         WriteOccupancy(item);
         placedItems.Add(item);
+        Changed?.Invoke();
         return item;
     }
 
@@ -68,6 +75,7 @@ public class InventoryGrid
         item.gridY = newY;
         item.rotationSteps = newRotationSteps;
         WriteOccupancy(item);
+        Changed?.Invoke();
         return true;
     }
 
@@ -81,6 +89,7 @@ public class InventoryGrid
     {
         ClearOccupancy(item);
         placedItems.Remove(item);
+        Changed?.Invoke();
     }
 
     private void WriteOccupancy(PlacedItem item)

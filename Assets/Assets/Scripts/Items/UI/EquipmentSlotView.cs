@@ -10,10 +10,10 @@ using UnityEngine.UI;
 // dragged back out into a grid pane to unequip.
 public class EquipmentSlotView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    public EquipmentSlot slot;
     public Image iconImage;
     public TextMeshProUGUI equipamentName;
 
+    private EquipmentSlot slot;
     private InventoryUIController owner;
     private RectTransform rectTransform;
     private RectTransform iconRectTransform;
@@ -39,9 +39,20 @@ public class EquipmentSlotView : MonoBehaviour, IBeginDragHandler, IDragHandler,
         Refresh();
     }
 
+    // Binds the player's EquipmentSlot, resolved by InventoryUIController via
+    // PlayerReference.Instance rather than an Inspector reference - see EquipmentSlot's new
+    // home on Player alongside Inventory. Called on every Open()/OpenLoot(), so this can
+    // legitimately be re-bound (or cleared to null, e.g. if PlayerReference.Instance is
+    // momentarily unavailable).
+    public void SetSlot(EquipmentSlot boundSlot)
+    {
+        slot = boundSlot;
+        Refresh();
+    }
+
     public void Refresh()
     {
-        bool hasItem = slot.EquippedItem != null;
+        bool hasItem = slot != null && slot.EquippedItem != null;
         if (iconImage == null) return;
 
         iconImage.enabled = hasItem;

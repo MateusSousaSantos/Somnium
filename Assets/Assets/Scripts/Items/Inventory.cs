@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,6 +20,13 @@ public class Inventory : MonoBehaviour
 
     public InventoryGrid Grid { get; private set; }
 
+    // Forwarded from Grid so bound views only ever need to know about Inventory, not the grid
+    // instance underneath it (Grid itself isn't created until Awake).
+    public event Action Changed
+    {
+        add => Grid.Changed += value;
+        remove => Grid.Changed -= value;
+    }
 
     [Header("Starting items")]
     public List<ItemStack> startingItems = new List<ItemStack>();

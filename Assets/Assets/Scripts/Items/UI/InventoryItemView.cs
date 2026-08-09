@@ -148,6 +148,11 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
         dragStartAnchoredPos = rectTransform.anchoredPosition;
         dragStartRotation = placedItem.rotationSteps;
 
+        // Suspended for the duration of the drag - see InventoryPanelView.SetRefreshSuspended.
+        // Every OnEndDrag exit path mutates the grid again (a real move, a revert, or a
+        // removal), so it's always safe to un-suspend as the very first thing there.
+        sourcePane.SetRefreshSuspended(true);
+
         // Reparent to a top-level drag layer while dragging. Canvas render order follows
         // sibling index, and this view otherwise stays parented under its source pane for
         // the whole drag - so dragging it over a pane with a HIGHER sibling index (e.g.
@@ -168,6 +173,7 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
     public void OnEndDrag(PointerEventData eventData)
     {
         isDragging = false;
+        sourcePane.SetRefreshSuspended(false);
 
         // Equip slot is a special-cased drop target: it's not one of owner.GetActivePanes()
         // (no InventoryGrid/shape fitting - see EquipmentSlotView), so it's checked here first.
@@ -206,12 +212,14 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
 
         if (targetPane == sourcePane)
         {
-            if (grid.MoveItem(placedItem, targetX, targetY, placedItem.rotationSteps))
-            {
-                rectTransform.SetParent(sourcePane.GridContainer, false);
-                UpdateVisualPosition();
-            }
-            else
+            // Reparent back under GridContainer BEFORE mutating the grid: grid.MoveItem fires
+            // Changed synchronously, which runs this pane's own RefreshItemViews - this view
+            // needs to already be an active child of GridContainer at that point so the
+            // release/reacquire pass picks it up and repositions it, instead of leaving it
+            // stranded under DragLayer while a second, duplicate view gets acquired for the
+            // same item.
+            rectTransform.SetParent(sourcePane.GridContainer, false);
+            if (!grid.MoveItem(placedItem, targetX, targetY, placedItem.rotationSteps))
             {
                 RevertDrag();
             }
@@ -228,9 +236,10 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
         targetPane.Grid.PlaceItem(placedItem.itemData, placedItem.rotationSteps, targetX, targetY, placedItem.quantity);
 
         // This view is currently parented under the drag layer (not either pane's
-        // GridContainer), so RefreshBothPanes' own "destroy existing item views" pass
-        // wouldn't find it - destroy it explicitly instead of relying on that.
-        Destroy(gameObject);
+        // GridContainer), so its own pane's RefreshItemViews (fired by grid.RemoveItem's
+        // Changed event above) wouldn't find it there to release it - release it back to its
+        // source pane's pool explicitly instead of relying on that.
+        sourcePane.ReleaseView(this);
         owner.RefreshBothPanes();
     }
 
@@ -241,7 +250,7 @@ public class InventoryItemView : MonoBehaviour, IBeginDragHandler, IDragHandler,
         if (!owner.equipSlotView.TryAccept(placedItem.itemData, placedItem.quantity)) return false;
 
         grid.RemoveItem(placedItem);
-        Destroy(gameObject);
+        sourcePane.ReleaseView(this);
         owner.RefreshBothPanes();
         return true;
     }
